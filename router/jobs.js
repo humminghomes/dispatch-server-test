@@ -18,10 +18,10 @@ router.post("/jobs", async (req, res) => {
       },
       record: {
         customer: {
-          first_name: "Jane4",
-          last_name: "Doe4",
+          first_name: "John",
+          last_name: "Smith",
           email: "email@dispatch.me",
-          external_id: req.body.userId,
+          external_id: req.body.userId || "21e63f86285945cabecb75afab8f9ab3",
           phone_numbers: [
             {
               number: "+15550913813",
@@ -30,8 +30,8 @@ router.post("/jobs", async (req, res) => {
             },
           ],
         },
-        title: "Job title",
-        description: "Some description.\n\n# Accepts *markdown*",
+        title: "Test Job title",
+        description: "Test - Job Description",
         external_id: crypto.randomUUID(),
         address: {
           street_1: "1213 Summer St",
