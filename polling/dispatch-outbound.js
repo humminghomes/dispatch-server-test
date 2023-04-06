@@ -29,8 +29,43 @@ const dispatchRequest = async () => {
   console.log(`Requesting at: ${new Date()}`);
   try {
     let res = await fetch(url, out_request);
-    const msg = JSON.stringify(res.body);
-    console.log(res.status, msg);
+    const val = await res.json();
+
+    val.forEach(async (val) => {
+      console.log();
+      const payload = val.Message.Request.Payload;
+
+      payload.Actions.forEach((action) => {
+        const json = JSON.stringify(action);
+        console.log(json);
+      });
+
+      var receipt = `{"Receipt":"${val.Message.Receipt}","ProcedureID":"${val.Message.Request.ProcedureID}","Result":"success"}`;
+      receipt = encodeURIComponent(receipt);
+      var ack_signature = crypto
+        .createHmac("sha256", secret)
+        .update(receipt, "utf8")
+        .digest("hex");
+
+      var ack_headers = {
+        "Content-Type": "application/json",
+        "X-Dispatch-Key": key,
+        "X-Dispatch-Signature": ack_signature,
+      };
+
+      var ack_request = {
+        method: "POST",
+        headers: ack_headers,
+        body: receipt,
+      };
+
+      let ackRes = await fetch(
+        "https://connect-sbx.dispatch.me/agent/ack",
+        out_request
+      );
+      const ackJson = await ackRes.json();
+      console.log(ackJson);
+    });
   } catch (error) {
     console.log(error);
   }
