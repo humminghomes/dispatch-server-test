@@ -26,6 +26,7 @@ var out_request = {
 };
 
 const dispatchRequest = async () => {
+  console.log(`Requesting at: ${new Date()}`);
   try {
     let res = await fetch(url, out_request);
     const msg = JSON.stringify(res.body);
