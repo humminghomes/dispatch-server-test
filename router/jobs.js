@@ -3,6 +3,7 @@ const router = express.Router();
 var crypto = require("crypto");
 const { setDispatchAuthHeaders } = require("../middleware/dispatch-auth");
 
+/// DELETE to /api/dispatch/jobs/{Job.External_ID}
 router.delete("/jobs/:jobId", async (req, res) => {
   try {
     console.log(`Incoming Request to Delete External Id: ${req.params.jobId}`);
