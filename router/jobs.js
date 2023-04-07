@@ -3,6 +3,48 @@ const router = express.Router();
 var crypto = require("crypto");
 const { setDispatchAuthHeaders } = require("../middleware/dispatch-auth");
 
+router.delete("/jobs/:jobId", async (req, res) => {
+  try {
+    console.log(`Incoming Request to Delete External Id: ${req.params.jobId}`);
+    const deleteBody = {
+      header: {
+        record_type: "offer",
+        version: "v2",
+      },
+      record: {
+        external_id: req.params.jobId,
+        status: "canceled",
+      },
+    };
+
+    const url = "https://connect-sbx.dispatch.me/agent/in";
+
+    const dispatchJobBody = JSON.stringify(deleteBody);
+    const auth = setDispatchAuthHeaders(dispatchJobBody);
+
+    const headers = {
+      "X-Dispatch-Key": process.env["DISPATCH_CLIENT_ID"],
+      "X-Dispatch-Signature": auth.signature,
+      "Content-Type": "application/json",
+    };
+
+    let dispatchRes = await fetch(url, {
+      method: "POST",
+      headers,
+      body: auth.payload,
+    });
+
+    if (dispatchRes.status === 200) {
+      console.log("Received 200 from Dispatch API");
+      res.send().status(201);
+    } else {
+      res.send({ error: "Unauthorized" }).status(400);
+    }
+  } catch (error) {
+    console.log(error);
+  }
+});
+
 /// Expects the following body
 // {
 //   "userId": "humming-homes-user-id"
