@@ -8,7 +8,8 @@ const { setDispatchAuthHeaders } = require("../middleware/dispatch-auth");
 //   "userId": "humming-homes-user-id"
 // }
 router.post("/jobs", async (req, res) => {
-  console.log("posting new job");
+  let id = crypto.randomUUID();
+  console.log(`Creating new job. External id: ${id}`);
 
   const newJob = [
     {
@@ -32,7 +33,7 @@ router.post("/jobs", async (req, res) => {
         },
         title: "Test Job title",
         description: "Test - Job Description",
-        external_id: crypto.randomUUID(),
+        external_id: id,
         address: {
           street_1: "1213 Summer St",
           street_2: "apt. 1",

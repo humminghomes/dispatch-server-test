@@ -30,18 +30,18 @@ const dispatchRequest = async () => {
   try {
     let res = await fetch(url, out_request);
     const val = await res.json();
-
+    console.log(`Received ${val.length} messages`);
     val.forEach(async (val) => {
-      console.log();
       const payload = val.Message.Request.Payload;
 
       payload.Actions.forEach((action) => {
         const json = JSON.stringify(action);
+        console.log("Action Received:");
         console.log(json);
+        console.log("------");
       });
 
       var receipt = `{"Receipt":"${val.Message.Receipt}","ProcedureID":"${val.Message.Request.ProcedureID}","Result":"success"}`;
-      receipt = encodeURIComponent(receipt);
       var ack_signature = crypto
         .createHmac("sha256", secret)
         .update(receipt, "utf8")
@@ -61,18 +61,23 @@ const dispatchRequest = async () => {
 
       let ackRes = await fetch(
         "https://connect-sbx.dispatch.me/agent/ack",
-        out_request
+        ack_request
       );
       const ackJson = await ackRes.json();
       console.log(ackJson);
+      console.log("ACK successful");
     });
+
+    if (val.length >= 10) {
+      console.log("More messages available, time to get more");
+    }
   } catch (error) {
     console.log(error);
   }
 };
 
 const startDispatchPolling = () => {
-  // Polls every 5 seconds
+  // Polls every 30 seconds
   const poller = new Pollinator(dispatchRequest, {
     delay: 30000,
   });
