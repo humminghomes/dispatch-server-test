@@ -29,12 +29,14 @@ const dispatchRequest = async () => {
   console.log(`Requesting at: ${new Date()}`);
   try {
     let res = await fetch(url, out_request);
-    const val = await res.json();
-    console.log(`Received ${val.length} messages`);
-    val.forEach(async (val) => {
+    const values = await res.json();
+    console.log(`Received ${values.length} messages`);
+
+    for (const val of values) {
+      if (!val) return;
       const payload = val.Message.Request.Payload;
 
-      payload.Actions.forEach(async (action) => {
+      for (const action of payload.Actions) {
         const json = JSON.stringify(action);
         console.log("Action Received:");
         console.log(json);
@@ -59,13 +61,13 @@ const dispatchRequest = async () => {
         if (data.appointment) {
           await saveAppointmentAndUpdateJobStatus(data.appointment);
         }
-      });
+      }
 
       // Save Message in DB
       sendAckMessage(val);
-    });
+    }
 
-    if (val.length >= 10) {
+    if (values.length >= 10) {
       // I'm not sure if a method in JS can call itself.
       dispatchRequest();
     }
@@ -74,14 +76,7 @@ const dispatchRequest = async () => {
   }
 };
 
-const startDispatchPolling = (val) => {
-  // Polls every 30 seconds
-  const poller = new Pollinator(dispatchRequest, {
-    delay: 30000,
-  });
-  poller.start();
-};
-
+// Sends the ack to let Dispatch know we have saved the message.
 const sendAckMessage = async (val) => {
   var receipt = `{"Receipt":"${val.Message.Receipt}","ProcedureID":"${val.Message.Request.ProcedureID}","Result":"success"}`;
   var ack_signature = createHmac("sha256", secret)
@@ -109,6 +104,7 @@ const sendAckMessage = async (val) => {
   console.log("ACK successful");
 };
 
+// Creates a customer in the db.
 const createCustomerIfNeeded = async (offer) => {
   const user = await prisma.dispatchCustomer.findUnique({
     where: { id: offer.customer.external_id },
@@ -127,9 +123,12 @@ const createCustomerIfNeeded = async (offer) => {
     data: customer,
   });
 
+  console.log("Customer created.");
   return newUser;
 };
 
+// Saves the new offer in the db.
+// If a customer does not exist, we will create one.
 const saveOfferCreatedToDatabase = async (offer) => {
   const customer = await createCustomerIfNeeded(offer);
 
@@ -155,6 +154,7 @@ const saveOfferCreatedToDatabase = async (offer) => {
   return;
 };
 
+// Updates the status for a Job offer
 const updateJobOfferStatus = async (offer) => {
   const existing = await prisma.dispatchJob.findUnique({
     where: { id: offer.job.external_id },
@@ -177,6 +177,7 @@ const updateJobOfferStatus = async (offer) => {
   return;
 };
 
+// Updates job status and saves the Dispatch Job Id
 const updateJobStatus = async (job) => {
   const existing = await prisma.dispatchJob.findUnique({
     where: { id: job.external_id },
@@ -199,22 +200,12 @@ const updateJobStatus = async (job) => {
   return;
 };
 
+// Updates job status with appointment status
+// Saves the appointment in the db.
 const saveAppointmentAndUpdateJobStatus = async (appointment) => {
-  const existingJob = await prisma.dispatchJob.findUnique({
-    where: { dispatchJobId: appointment.job_id },
-  });
-
-  if (!existingJob) {
-    console.log("No job exists to update");
+  if (await updateExistingAppointment(appointment)) {
     return;
   }
-
-  await prisma.dispatchJob.update({
-    where: { id: existingJob.id },
-    data: {
-      status: appointment.status,
-    },
-  });
 
   await prisma.dispatchAppointment.create({
     data: {
@@ -227,6 +218,32 @@ const saveAppointmentAndUpdateJobStatus = async (appointment) => {
   });
 
   console.log("Saved Appointment");
+  return;
+};
+
+const updateExistingAppointment = async (appointment) => {
+  const existing = await prisma.dispatchAppointment.findUnique({
+    where: { id: appointment.id },
+  });
+
+  if (!existing) return false;
+
+  await prisma.dispatchAppointment.update({
+    where: { id: appointment.id },
+    data: {
+      status: appointment.status,
+    },
+  });
+
+  return true;
+};
+
+const startDispatchPolling = (val) => {
+  // Polls every 30 seconds
+  const poller = new Pollinator(dispatchRequest, {
+    delay: 30000,
+  });
+  poller.start();
 };
 
 export default startDispatchPolling;
