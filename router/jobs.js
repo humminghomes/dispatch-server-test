@@ -48,6 +48,8 @@ router.delete("/jobs/:jobId", async (req, res) => {
   }
 });
 
+/// POST to /api/dispatch/jobs
+/// Creates a mock Offer with a specified id, if not a static id is provided.
 /// Expects the following body
 // {
 //   "userId": "humming-homes-user-id"
@@ -67,7 +69,7 @@ router.post("/jobs", async (req, res) => {
           first_name: "John",
           last_name: "Smith",
           email: "email@dispatch.me",
-          external_id: req.body.userId || "21e63f86285945cabecb75afab8f9ab3",
+          external_id: req.body.userId || "21e63f86285945cabecb75afab8f9ab3", // HUMMING_HOMES.User.uid
           phone_numbers: [
             {
               number: "+15550913813",
@@ -78,7 +80,7 @@ router.post("/jobs", async (req, res) => {
         },
         title: "Test Job title",
         description: "Test - Job Description",
-        external_id: id,
+        external_id: id, // HUMMING_HOMES.Job.uid - our own unique id for this job.
         address: {
           street_1: "1213 Summer St",
           street_2: "apt. 1",
