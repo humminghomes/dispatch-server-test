@@ -1,5 +1,7 @@
 ## Running the Server
 
+> Please ensure your NodeJS version is at least v 18.0.0
+
 1. `npm install`
 2. Set up a `.env` file with Dispatch secrets
 
