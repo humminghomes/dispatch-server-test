@@ -7,16 +7,18 @@ const { setDispatchAuthHeaders } = require("../middleware/dispatch-auth");
 router.delete("/jobs/:jobId", async (req, res) => {
   try {
     console.log(`Incoming Request to Delete External Id: ${req.params.jobId}`);
-    const deleteBody = {
-      header: {
-        record_type: "offer",
-        version: "v2",
+    const deleteBody = [
+      {
+        header: {
+          record_type: "offer",
+          version: "v2",
+        },
+        record: {
+          external_id: req.params.jobId,
+          status: "canceled",
+        },
       },
-      record: {
-        external_id: req.params.jobId,
-        status: "canceled",
-      },
-    };
+    ];
 
     const url = "https://connect-sbx.dispatch.me/agent/in";
 
