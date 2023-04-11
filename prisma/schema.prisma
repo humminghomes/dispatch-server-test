@@ -10,8 +10,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+model Customer {
+  id String @id
+  firstName String?
+  lastName String?
+  email String
+  jobs Job[]
+}
+
+model Job {
+  id String @id
+  title String
+  description String?
+  customer Customer @relation(fields: [customerId], references: [id])
+  customerId String
+  status String
 }

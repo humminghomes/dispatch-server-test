@@ -1,10 +1,10 @@
-const express = require("express");
-const router = express.Router();
-var crypto = require("crypto");
-const { setDispatchAuthHeaders } = require("../middleware/dispatch-auth");
+import { Router } from "express";
+const jobsRouter = Router();
+import { randomUUID } from "crypto";
+import { setDispatchAuthHeaders } from "../middleware/dispatch-auth.js";
 
 /// DELETE to /api/dispatch/jobs/{Job.External_ID}
-router.delete("/jobs/:jobId", async (req, res) => {
+jobsRouter.delete("/jobs/:jobId", async (req, res) => {
   try {
     console.log(`Incoming Request to Delete External Id: ${req.params.jobId}`);
     const deleteBody = [
@@ -54,8 +54,8 @@ router.delete("/jobs/:jobId", async (req, res) => {
 // {
 //   "userId": "humming-homes-user-id"
 // }
-router.post("/jobs", async (req, res) => {
-  let id = crypto.randomUUID();
+jobsRouter.post("/jobs", async (req, res) => {
+  let id = randomUUID();
   console.log(`Creating new job. External id: ${id}`);
 
   const newJob = [
@@ -122,4 +122,4 @@ router.post("/jobs", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default jobsRouter;

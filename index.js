@@ -1,16 +1,16 @@
-require("dotenv").config();
-const express = require("express");
+import * as dotenv from "dotenv";
+dotenv.config();
+import express, { urlencoded, json } from "express";
 const app = express();
-const cors = require("cors");
+import cors from "cors";
 const PORT = process.env.PORT || 8080;
 
-// External Job Route
-const jobsRouter = require("./router/jobs");
-const startDispatchPolling = require("./polling/dispatch-outbound");
+import jobsRouter from "./router/jobs.js";
+import startDispatchPolling from "./polling/dispatch-outbound.js";
 
-app.use(express.urlencoded({ extended: true }));
+app.use(urlencoded({ extended: true }));
 app.use(cors());
-app.use(express.json());
+app.use(json());
 app.use("/api/dispatch", jobsRouter);
 
 // Start server

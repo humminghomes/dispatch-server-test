@@ -1,7 +1,7 @@
-const setDispatchAuthHeaders = (payload) => {
-  const zlib = require("zlib");
-  var crypto = require("crypto");
+import zlib from "zlib";
+import crypto from "crypto";
 
+export const setDispatchAuthHeaders = (payload) => {
   var secret = process.env["DISPATCH_CLIENT_SECRET"];
 
   var payload = zlib.gzipSync(payload);
@@ -12,8 +12,4 @@ const setDispatchAuthHeaders = (payload) => {
     .digest("hex");
 
   return { signature, payload };
-};
-
-module.exports = {
-  setDispatchAuthHeaders,
 };
