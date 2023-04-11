@@ -34,21 +34,35 @@ const dispatchRequest = async () => {
     val.forEach(async (val) => {
       const payload = val.Message.Request.Payload;
 
-      payload.Actions.forEach((action) => {
+      payload.Actions.forEach(async (action) => {
         const json = JSON.stringify(action);
         console.log("Action Received:");
         console.log(json);
         console.log("------");
 
-        if (action.ack_message === "Created offer") {
-          console.log("offer");
-          // saveOfferCreatedToDatabase(action.Put.ack.data);
+        const data = action.Put;
+
+        if (data.ack) {
+          if (data.ack.ack_message === "Created offer") {
+            await saveOfferCreatedToDatabase(action.Put.ack.data);
+          }
+        }
+
+        if (data.joboffer) {
+          await updateJobOfferStatus(data.joboffer);
+        }
+
+        if (data.job) {
+          await updateJobStatus(data.job);
+        }
+
+        if (data.appointment) {
+          await saveAppointmentAndUpdateJobStatus(data.appointment);
         }
       });
 
       // Save Message in DB
-      // sendAckMessage(val);
-      // Save job info
+      sendAckMessage(val);
     });
 
     if (val.length >= 10) {
@@ -96,9 +110,7 @@ const sendAckMessage = async (val) => {
 };
 
 const createCustomerIfNeeded = async (offer) => {
-  const prisma = prisma;
-
-  const user = await prisma.customer.findOne({
+  const user = await prisma.dispatchCustomer.findUnique({
     where: { id: offer.customer.external_id },
   });
 
@@ -111,7 +123,7 @@ const createCustomerIfNeeded = async (offer) => {
     lastName: offer.customer.last_name,
   };
 
-  const newUser = await prisma.customer.create({
+  const newUser = await prisma.dispatchCustomer.create({
     data: customer,
   });
 
@@ -119,21 +131,102 @@ const createCustomerIfNeeded = async (offer) => {
 };
 
 const saveOfferCreatedToDatabase = async (offer) => {
-  const customer = createCustomerIfNeeded(offer);
+  const customer = await createCustomerIfNeeded(offer);
+
+  const existing = await prisma.dispatchJob.findUnique({
+    where: { id: offer.job.external_id },
+  });
+
+  if (existing) return;
 
   const job = {
     id: offer.job.external_id,
     title: offer.job.title,
     description: offer.job.description,
     status: offer.status,
-    customer: customer,
+    customerId: customer.id,
   };
 
-  const newJob = await prisma.job.create({
+  await prisma.dispatchJob.create({
     data: job,
   });
 
   console.log("Job created");
+  return;
+};
+
+const updateJobOfferStatus = async (offer) => {
+  const existing = await prisma.dispatchJob.findUnique({
+    where: { id: offer.job.external_id },
+  });
+
+  if (!existing) {
+    console.log("No job exists to update");
+    return;
+  }
+
+  await prisma.dispatchJob.update({
+    where: { id: existing.id },
+    data: {
+      status: offer.status,
+      dispatchJobId: offer.job_id,
+    },
+  });
+
+  console.log("Job offer Updated");
+  return;
+};
+
+const updateJobStatus = async (job) => {
+  const existing = await prisma.dispatchJob.findUnique({
+    where: { id: job.external_id },
+  });
+
+  if (!existing) {
+    console.log("No job exists to update");
+    return;
+  }
+
+  await prisma.dispatchJob.update({
+    where: { id: existing.id },
+    data: {
+      status: job.status,
+      dispatchJobId: job.id,
+    },
+  });
+
+  console.log("Job Updated");
+  return;
+};
+
+const saveAppointmentAndUpdateJobStatus = async (appointment) => {
+  const existingJob = await prisma.dispatchJob.findUnique({
+    where: { dispatchJobId: appointment.job_id },
+  });
+
+  if (!existingJob) {
+    console.log("No job exists to update");
+    return;
+  }
+
+  await prisma.dispatchJob.update({
+    where: { id: existingJob.id },
+    data: {
+      status: appointment.status,
+    },
+  });
+
+  await prisma.dispatchAppointment.create({
+    data: {
+      id: appointment.id,
+      status: appointment.status,
+      jobId: appointment.job_id,
+      startTime: new Date(appointment.start_time),
+      endTime: new Date(appointment.end_time),
+    },
+  });
+
+  console.log("Saved Appointment");
 };
 
 export default startDispatchPolling;
